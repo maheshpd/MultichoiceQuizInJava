@@ -7,6 +7,7 @@ import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -148,9 +149,32 @@ public class QuestionFragment extends Fragment implements IQuestion {
             Object[] arrayAnswer = Common.selected_values.toArray();
             for (int i = 0; i <arrayAnswer.length ; i++)
                 if (1<arrayAnswer.length-1)
-                    result.append(new StringBuilder((String)arrayAnswer).substring(0,1)).append(,);
+                    result.append(new StringBuilder((String)arrayAnswer[i]).substring(0,1)).append(","); //Take first letter of Answer: Ex : arr[0] = A. NewYork , we will take letter 'A'
+            else
+                result.append(new StringBuilder((String)arrayAnswer[i]).substring(0,1)); //Too
         }
-        return null;
+        else if (Common.selected_values.size() == 1)
+        {
+            //IF only one choice
+            Object[] arrayAnswer = Common.selected_values.toArray();
+            result.append((String)arrayAnswer[0]).substring(0,1);
+        }
+        if (question != null)
+        {
+            //Compare correctAnswer with user answer
+            if (!TextUtils.isEmpty(result)) {
+                if (result.toString().equals(question.getCorrectAnswer()))
+                    currentQuestion.setType(Common.ANSWER_TYPE.RIGHT_ANSWER);
+                else
+                    currentQuestion.setType(Common.ANSWER_TYPE.WRONG_ANSWER);
+            }else
+                currentQuestion.setType(Common.ANSWER_TYPE.NO_ANSWER);
+        }else {
+            Toast.makeText(getContext(), "Cannot get question",  Toast.LENGTH_SHORT).show();
+            currentQuestion.setType(Common.ANSWER_TYPE.NO_ANSWER);
+        }
+        Common.selected_values.clear(); //Always clear selected_value when compare done
+        return currentQuestion;
     }
 
     @Override

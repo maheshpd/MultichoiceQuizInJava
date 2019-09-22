@@ -34,15 +34,16 @@ import android.view.Menu;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ConcurrentModificationException;
 import java.util.concurrent.TimeUnit;
 
 public class QuestionsActivity extends AppCompatActivity {
 
-   int time_play = Common.TOTAL_TIME;
+    int time_play = Common.TOTAL_TIME;
     boolean isAnswerModeView = false;
 
 
-    TextView txt_right_answer,txt_timer;
+    TextView txt_right_answer, txt_timer;
 
 
     RecyclerView answer_sheet_view;
@@ -65,7 +66,7 @@ public class QuestionsActivity extends AppCompatActivity {
         // menu should be considered as top level destinations.
 
         //First, we need take question from DB
-         takeQuestion();
+        takeQuestion();
 
         if (Common.questionList.size() > 0) {
 
@@ -75,9 +76,8 @@ public class QuestionsActivity extends AppCompatActivity {
 
             txt_timer.setVisibility(View.VISIBLE);
             txt_right_answer.setVisibility(View.VISIBLE);
-            txt_right_answer.setText(new StringBuilder(String.format("%d/%d",Common.right_answer_count,Common.questionList.size())));
+            txt_right_answer.setText(new StringBuilder(String.format("%d/%d", Common.right_answer_count, Common.questionList.size())));
             counterTimer();
-
 
 
             answer_sheet_view = findViewById(R.id.grid_answer);
@@ -93,17 +93,114 @@ public class QuestionsActivity extends AppCompatActivity {
             genFragmentList();
 
             QuestionFragmentAdapter questionFragmentAdapter = new QuestionFragmentAdapter(getSupportFragmentManager(),
-                    this,Common.fragmentsList);
+                    this, Common.fragmentsList);
             viewPager.setAdapter(questionFragmentAdapter);
 
             tabLayout.setupWithViewPager(viewPager);
+
+            viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+
+                int SCROLLING_RIGHT = 0;
+                int SCROLLING_LEFT = 1;
+                int SCROLLING_UNDETERMINED = 2;
+
+                int currentScrollDirection = 2;
+
+                private void setScrollingDirection(float positionOffset) {
+
+                    if ((1 - positionOffset) >= 0.5)
+                        this.currentScrollDirection = SCROLLING_RIGHT;
+                    else if ((1 - positionOffset) <= 0.5)
+                        this.currentScrollDirection = SCROLLING_RIGHT;
+                }
+
+                private boolean isScrollDirectionUndetermind() {
+                    return currentScrollDirection == SCROLLING_UNDETERMINED;
+                }
+
+                private boolean isScrollingRight() {
+                    return currentScrollDirection == SCROLLING_RIGHT;
+                }
+
+                private boolean isScrollingLeft() {
+                    return currentScrollDirection == SCROLLING_LEFT;
+                }
+
+                @Override
+                public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                    if (isScrollDirectionUndetermind())
+                        setScrollingDirection(positionOffset);
+                }
+
+                @Override
+                public void onPageSelected(int i) {
+                        QuestionFragment questionFragment;
+                        int position = 0;
+                        if (i>0)
+                        {
+                            if (isScrollingRight())
+                            {
+                                //If user scroll to right , get previous fragment to calculate result
+                                questionFragment = Common.fragmentsList.get(i-1);
+                                position = i-1;
+                            }
+                            else if (isScrollingLeft())
+                            {
+                                //If user scroll to right , get previous fragment to calculate result
+                                questionFragment = Common.fragmentsList.get(i-1);
+                                position = i+1;
+                            }else {
+                                questionFragment = Common.fragmentsList.get(position);
+                            }
+                        }
+                        else {
+                            questionFragment = Common.fragmentsList.get(0);
+                            position = 0;
+                        }
+
+                        //IF you want to show correct answer, just call function here
+                        CurrentQuestion question_state = questionFragment.getSelectedAnswer();
+                        Common.answerSheetList.set(position,question_state); // Set question answer for answersheet
+                    answerSheetAdapter.notifyDataSetChanged(); //Change color in answer sheet
+
+
+                    countCorrectAnswer();
+
+                    txt_right_answer.setText(new StringBuilder(String.format("%d",Common.right_answer_count))
+                    .append("/")
+                    .append(String.format("%d",Common.questionList.size())).toString());
+
+                    if (question_state.getType() == Common.ANSWER_TYPE.NO_ANSWER)
+                    {
+                        questionFragment.showCorrectAnswer();
+                        questionFragment.disableAnswer();
+                    }
+                    
+                }
+
+                @Override
+                public void onPageScrollStateChanged(int state) {
+                    if (state == ViewPager.SCROLL_STATE_IDLE)
+                        this.currentScrollDirection = SCROLLING_UNDETERMINED;
+                }
+            });
         }
     }
 
+    private void countCorrectAnswer() {
+        //Reset variable
+        Common.right_answer_count = Common.wrong_answer_count = 0;
+        for (CurrentQuestion item:Common.answerSheetList)
+            if (item.getType() == Common.ANSWER_TYPE.RIGHT_ANSWER)
+                Common.right_answer_count++;
+            else if (item.getType() == Common.ANSWER_TYPE.WRONG_ANSWER)
+            Common.wrong_answer_count++;
+    }
+
     private void genFragmentList() {
-        for (int i = 0; i <Common.questionList.size() ; i++) {
+        for (int i = 0; i < Common.questionList.size(); i++) {
             Bundle bundle = new Bundle();
-            bundle.putInt("index",i);
+            bundle.putInt("index", i);
             QuestionFragment fragment = new QuestionFragment();
             fragment.setArguments(bundle);
 
@@ -113,34 +210,32 @@ public class QuestionsActivity extends AppCompatActivity {
 
 
     private void counterTimer() {
-        if (Common.countDownTimer == null)
-        {
-            Common.countDownTimer = new CountDownTimer(Common.TOTAL_TIME,1000)   {
+        if (Common.countDownTimer == null) {
+            Common.countDownTimer = new CountDownTimer(Common.TOTAL_TIME, 1000) {
                 @Override
                 public void onTick(long l) {
                     txt_timer.setText(String.format("%02d:%02d",
                             TimeUnit.MILLISECONDS.toMinutes(l),
                             TimeUnit.MILLISECONDS.toSeconds(l) -
-                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(l))));
-                    time_play -=1000;
+                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(l))));
+                    time_play -= 1000;
                 }
 
                 @Override
                 public void onFinish() {
-        //Finish Game
+                    //Finish Game
                 }
             }.start();
-        }
-        else {
+        } else {
             Common.countDownTimer.cancel();
-            Common.countDownTimer = new CountDownTimer(Common.TOTAL_TIME,1000)   {
+            Common.countDownTimer = new CountDownTimer(Common.TOTAL_TIME, 1000) {
                 @Override
                 public void onTick(long l) {
                     txt_timer.setText(String.format("%02d:%02d",
                             TimeUnit.MILLISECONDS.toMinutes(1),
                             TimeUnit.MILLISECONDS.toSeconds(1) -
                                     TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(1))));
-                    time_play -=1000;
+                    time_play -= 1000;
                 }
 
                 @Override
@@ -154,13 +249,12 @@ public class QuestionsActivity extends AppCompatActivity {
     private void takeQuestion() {
 
         Common.questionList = DBHelper.getInstance(this).getQuestionByCategory(Common.selectedCategory.getId());
-        if (Common.questionList.size() == 0)
-        {
+        if (Common.questionList.size() == 0) {
             //If no question
             new MaterialStyledDialog.Builder(this)
                     .setTitle("Opps")
                     .setIcon(R.drawable.ic_sentiment_very_dissatisfied_black_24dp)
-                    .setDescription("We don't have any question in this " + Common.selectedCategory.getName()+" category")
+                    .setDescription("We don't have any question in this " + Common.selectedCategory.getName() + " category")
                     .setPositiveText("OK")
                     .onPositive(new MaterialDialog.SingleButtonCallback() {
                         @Override
@@ -170,8 +264,7 @@ public class QuestionsActivity extends AppCompatActivity {
                         }
                     }).show();
 
-        }
-        else {
+        } else {
 
 
             if (Common.answerSheetList.size() > 0)
@@ -180,9 +273,8 @@ public class QuestionsActivity extends AppCompatActivity {
             //Gen answerSheet item from question
             //30 question = 30 answer sheet item
             //1 question = 1 answer sheet item
-            for (int i=0;i<Common.questionList.size();i++)
-            {
-                Common.answerSheetList.add(new CurrentQuestion(i,Common.ANSWER_TYPE.NO_ANSWER)); //Default all answer is no answer
+            for (int i = 0; i < Common.questionList.size(); i++) {
+                Common.answerSheetList.add(new CurrentQuestion(i, Common.ANSWER_TYPE.NO_ANSWER)); //Default all answer is no answer
             }
         }
 
@@ -191,6 +283,7 @@ public class QuestionsActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.questions, menu);
         return true;
     }
 
