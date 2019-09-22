@@ -4,9 +4,9 @@ public class Question {
     private int id;
     private String questionText,questionImage,answerA,answerB,answerC,answerD,correctAnswer;
     private int isImageQuestion;
-    private int categoryID;
+    private int categoryId;
 
-    public Question(int id, String questionText, String questionImage, String answerA, String answerB, String answerC, String answerD, String correctAnswer, int isImageQuestion, int categoryID) {
+    public Question(int id, String questionText, String questionImage, String answerA, String answerB, String answerC, String answerD, String correctAnswer, int isImageQuestion, int categoryId) {
         this.id = id;
         this.questionText = questionText;
         this.questionImage = questionImage;
@@ -16,7 +16,7 @@ public class Question {
         this.answerD = answerD;
         this.correctAnswer = correctAnswer;
         this.isImageQuestion = isImageQuestion;
-        this.categoryID = categoryID;
+        this.categoryId = categoryId;
     }
 
     public int getId() {
@@ -91,11 +91,11 @@ public class Question {
         this.isImageQuestion = isImageQuestion;
     }
 
-    public int getCategoryID() {
-        return categoryID;
+    public int getCategoryId() {
+        return categoryId;
     }
 
     public void setCategoryID(int categoryID) {
-        this.categoryID = categoryID;
+        this.categoryId = categoryID;
     }
 }
