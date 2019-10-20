@@ -5,5 +5,5 @@
         android:id="@+id/menu_wrong_answer"
         android:title="Wrong Answer"
         android:actionLayout="@layout/rectangle_text_view"
-        app:showAsAction="always"
+        app:showAsAction="always"/>
 </menu>

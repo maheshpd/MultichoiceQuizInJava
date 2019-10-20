@@ -201,8 +201,8 @@ public class QuestionFragment extends Fragment implements IQuestion {
             }
             else if (answer.equals("D"))
             {
-                ckbC.setTypeface(null,Typeface.BOLD);
-                ckbC.setTextColor(Color.RED);
+                ckbD.setTypeface(null,Typeface.BOLD);
+                ckbD.setTextColor(Color.RED);
             }
         }
     }
@@ -225,10 +225,10 @@ public class QuestionFragment extends Fragment implements IQuestion {
         ckbD.setEnabled(true);
 
         //Remove all selected
-        ckbA.setEnabled(false);
-        ckbB.setEnabled(false);
-        ckbC.setEnabled(false);
-        ckbD.setEnabled(false);
+        ckbA.setChecked(false);
+        ckbB.setChecked(false);
+        ckbC.setChecked(false);
+        ckbD.setChecked(false);
 
         //Remove all bold on text
         ckbA.setTypeface(null, Typeface.NORMAL);
